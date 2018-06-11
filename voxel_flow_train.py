@@ -9,6 +9,7 @@ import numpy as np
 import os
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+import tensorflow.contrib.data as dat
 from datetime import datetime
 import random
 from random import shuffle
@@ -16,6 +17,8 @@ from voxel_flow_model import Voxel_flow_model
 from utils.image_utils import imwrite
 from functools import partial
 import pdb
+
+tf.data = dat
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -76,7 +79,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # target_resized = tf.image.resize_area(target_placeholder,[128, 128])
 
     # Prepare model.
-    model = Voxel_flow_model()
+    model = Voxel_flow_model(is_train=True)
     prediction = model.inference(input_placeholder)
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
     reproduction_loss = model.loss(prediction, target_placeholder)
@@ -100,7 +103,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     summaries.append(tf.summary.image('Input Image (after)', input_placeholder[:, :, :, 3:6], 3));
     summaries.append(tf.summary.image('Output Image', prediction, 3))
     summaries.append(tf.summary.image('Target Image', target_placeholder, 3))
-    summaries.append(tf.summary.image('Flow', flow, 3))
+    # summaries.append(tf.summary.image('Flow', flow, 3))
 
     # Create a saver.
     saver = tf.train.Saver(tf.all_variables())

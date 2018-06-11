@@ -5,10 +5,16 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from utils.loss_utils import l1_loss, l2_loss, vae_loss 
+from utils.loss_utils import l1_loss, l2_loss, vae_loss, l1_regularizer 
 from utils.geo_layer_utils import vae_gaussian_layer
 from utils.geo_layer_utils import bilinear_interp
 from utils.geo_layer_utils import meshgrid
+
+'''TODO
+Check regularization terms again;
+- Check Charbonnier penalty function
+'''
+
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -22,15 +28,16 @@ class Voxel_flow_model(object):
     """
     return self._build_model(input_images) 
 
-  def loss(self, predictions, targets):
+  def loss(self, predictions, flow_motion, flow_mask, targets, lambda_motion, lambda_mask):
     """Compute the necessary loss for training.
     Args:
     Returns:
     """
-    self.reproduction_loss = l1_loss(predictions, targets) #l2_loss(predictions, targets)
-    # self.prior_loss = vae_loss(self.z_mean, self.z_logvar, prior_weight = 0.0001)
+    # corrected regularized loss
+    self.reproduction_loss = l1_loss(predictions, targets) \
+                  + lambda_motion * l1_regularizer(flow_motion) \
+                  + lambda_mask * l1_regularizer(flow_mask)
 
-    # return [self.reproduction_loss, self.prior_loss]
     return self.reproduction_loss
 
   def _build_model(self, input_images):
@@ -105,4 +112,8 @@ class Voxel_flow_model(object):
     mask = tf.tile(mask, [1, 1, 1, 3])
     net = tf.multiply(mask, output_1) + tf.multiply(1.0 - mask, output_2)
 
-    return [net, net_copy]
+    # for the correct loss function
+    flow_motion = net_copy[:, :, :, 0:2]
+    flow_mask = tf.expand_dims(net[:, :, :, 2], 3)
+
+    return(net, flow_motion, flow_mask)

@@ -19,7 +19,19 @@ def l1_loss(predictions, targets):
 
   loss = tf.reduce_sum(tf.abs(predictions- targets))
   loss = tf.div(loss, total_elements)
+  
   return loss
+
+def l1_regularizer(flow):
+  '''
+  implements L1 regularization for flow in R^[n x m]
+  '''
+  total_dim = tf.cast(tf.reduce_prod(tf.cast(tf.shape(targets)), tf.float32), tf.int32)
+  flow = tf.reshape(flow, shape=[total_dim, 1])
+  l1_magnitude = tf.reduce_sum(tf.abs(flow))
+
+  return(l1_magnitude)
+
 
 def l2_loss(predictions, targets):
   """Implements tensorflow l2 loss, normalized by number of elements.
@@ -37,6 +49,7 @@ def l2_loss(predictions, targets):
 def tv_loss():
   #TODO
   pass
+  
 def vae_loss(z_mean, z_logvar, prior_weight=1.0):
   """Implements the VAE reguarlization loss.
   """

@@ -41,6 +41,11 @@ tf.app.flags.DEFINE_integer(
         'batch_size', 32, 'The number of samples in each batch.')
 tf.app.flags.DEFINE_float('initial_learning_rate', 0.0003,
                           """Initial learning rate.""")
+# added regularization parameters
+tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
+            """Regularization term for motion components""")
+tf.app.flags.DEFINE_float('lambda_mask', 0.005, 
+            """Regularization term for time component""")
 
 def _read_image(filename):
   image_string = tf.read_file(filename)
@@ -80,9 +85,11 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
 
     # Prepare model.
     model = Voxel_flow_model(is_train=True)
-    prediction = model.inference(input_placeholder)
+    prediction, flow_motion, flow_mask = model.inference(input_placeholder)
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
-    reproduction_loss = model.loss(prediction, target_placeholder)
+    reproduction_loss = model.loss(prediction, flow_motion, 
+                              flow_mask, target_placeholder,
+                              FLAGS.lambda_motion, FLAGS.lambda_mask)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss
     
@@ -99,8 +106,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     summaries.append(tf.summary.scalar('total_loss', total_loss))
     summaries.append(tf.summary.scalar('reproduction_loss', reproduction_loss))
     # summaries.append(tf.summary.scalar('prior_loss', prior_loss))
-    summaries.append(tf.summary.image('Input Image (before)', input_placeholder[:, :, :, 0:3], 3));
-    summaries.append(tf.summary.image('Input Image (after)', input_placeholder[:, :, :, 3:6], 3));
+    summaries.append(tf.summary.image('Input Image (before)', input_placeholder[:, :, :, 0:3], 3))
+    summaries.append(tf.summary.image('Input Image (after)', input_placeholder[:, :, :, 3:6], 3))
     summaries.append(tf.summary.image('Output Image', prediction, 3))
     summaries.append(tf.summary.image('Target Image', target_placeholder, 3))
     # summaries.append(tf.summary.image('Flow', flow, 3))

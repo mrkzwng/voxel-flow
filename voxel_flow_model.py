@@ -10,6 +10,8 @@ from utils.geo_layer_utils import vae_gaussian_layer
 from utils.geo_layer_utils import bilinear_interp
 from utils.geo_layer_utils import meshgrid
 
+FLAGS = tf.app.flags.FLAGS
+
 class Voxel_flow_model(object):
   def __init__(self, is_train=True):
     self.is_train = is_train
@@ -64,13 +66,14 @@ class Voxel_flow_model(object):
           net = slim.conv2d(net, 64, [5, 5], stride=1, scope='conv6')
     net = slim.conv2d(net, 3, [5, 5], stride=1, activation_fn=tf.tanh,
     normalizer_fn=None, scope='conv7')
+    net_copy = net
     
     flow = net[:, :, :, 0:2]
     mask = tf.expand_dims(net[:, :, :, 2], 3)
 
     grid_x, grid_y = meshgrid(256, 256)
-    grid_x = tf.tile(grid_x, [32, 1, 1]) # batch_size = 32
-    grid_y = tf.tile(grid_y, [32, 1, 1]) # batch_size = 32
+    grid_x = tf.tile(grid_x, [FLAGS.batch_size, 1, 1])
+    grid_y = tf.tile(grid_y, [FLAGS.batch_size, 1, 1])
 
     flow = 0.5 * flow
 
@@ -87,4 +90,4 @@ class Voxel_flow_model(object):
     mask = tf.tile(mask, [1, 1, 1, 3])
     net = tf.multiply(mask, output_1) + tf.multiply(1.0 - mask, output_2)
 
-    return net
+    return [net, net_copy]

@@ -85,6 +85,6 @@ class Voxel_flow_model(object):
 
     mask = 0.5 * (1.0 + mask)
     mask = tf.tile(mask, [1, 1, 1, 3])
-    net = tf.mul(mask, output_1) + tf.mul(1.0 - mask, output_2)
+    net = tf.multiply(mask, output_1) + tf.multiply(1.0 - mask, output_2)
 
     return net

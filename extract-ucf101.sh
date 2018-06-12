@@ -40,8 +40,8 @@ for X in `seq 1 $(( NUM_FRAMES - 2 ))`; do
     ln -s $( basename $( printf "%s_%04d.png" $PREFIX $(( X + 2 )) ) ) $( printf "%s_delayed2_%04d.png" $PREFIX $X )
 done    
 
-ffmpeg -loglevel error -i ${PREFIX}_delayed1_%04d.png -i ${PREFIX}_%04d.png -filter_complex "psnr=stats_file=${PREFIX}.d1.psnr" -f null /dev/null
-ffmpeg -loglevel error -i ${PREFIX}_delayed1_%04d.png -i ${PREFIX}_delayed2_%04d.png -filter_complex "psnr=stats_file=${PREFIX}.d2.psnr" -f null /dev/null
+ffmpeg -loglevel error -i ${PREFIX}_%04d.png -i ${PREFIX}_delayed1_%04d.png -filter_complex "psnr=stats_file=${PREFIX}.d1.psnr" -f null /dev/null
+ffmpeg -loglevel error -i ${PREFIX}_%04d.png -i ${PREFIX}_delayed2_%04d.png -filter_complex "psnr=stats_file=${PREFIX}.d2.psnr" -f null /dev/null
 
 cut -d" " -f1,6 < ${PREFIX}.d1.psnr > ${PREFIX}.d1.cut.psnr
 cut -d" " -f1,6 < ${PREFIX}.d2.psnr > ${PREFIX}.d2.cut.psnr

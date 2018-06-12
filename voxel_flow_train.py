@@ -18,28 +18,32 @@ from utils.image_utils import imwrite
 from functools import partial
 import pdb
 
+# directories
+train_image_dir = '../results/train/'
+test_image_dir = '../results/test/'
+checkpoint = './voxel_flow_checkpoints/iter_2'
+
+# due to version differences
 tf.data = dat
 
-FLAGS = tf.app.flags.FLAGS
-
 # Define necessary FLAGS
+FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', './voxel_flow_checkpoints/',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_string('train_image_dir', './voxel_flow_train_image/',
+tf.app.flags.DEFINE_string('train_image_dir', train_image_dir,
 			   """Directory where to output images.""")
-tf.app.flags.DEFINE_string('test_image_dir', './voxel_flow_test_image/',
+tf.app.flags.DEFINE_string('test_image_dir', test_image_dir,
 			   """Directory where to output images.""")
 tf.app.flags.DEFINE_string('subset', 'train',
                            """Either 'train' or 'validation'.""")
-tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', './voxel_flow_checkpoints/',
+tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
                            """If specified, restore this pretrained model """
                            """before beginning any training.""")
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer(
-        'batch_size', 32, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.0003,
+tf.app.flags.DEFINE_integer('batch_size', 16, 'The number of samples in each batch.')
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.01,
                           """Initial learning rate.""")
 # added regularization parameters
 tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
@@ -113,13 +117,14 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # summaries.append(tf.summary.image('Flow', flow, 3))
 
     # Create a saver.
-    saver = tf.train.Saver(tf.all_variables())
+    saver = tf.train.Saver(tf.global_variables())
 
     # Build the summary operation from the last tower summaries.
     summary_op = tf.summary.merge_all()
 
     # Restore checkpoint from file.
-    if FLAGS.pretrained_model_checkpoint_path:
+    if FLAGS.pretrained_model_checkpoint_path \
+        and tf.train.get_checkpoint_state(FLAGS.pretrained_model_checkpoint_path):
       sess = tf.Session()
       assert tf.gfile.Exists(FLAGS.pretrained_model_checkpoint_path)
       ckpt = tf.train.get_checkpoint_state(
@@ -131,7 +136,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
       sess.run([batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
     else:
       # Build an initialization operation to run below.
-      init = tf.initialize_all_variables()
+      print('No existing checkpoints.')
+      init = tf.global_variables_initializer()
       sess = tf.Session()
       sess.run([init, batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
 
@@ -170,7 +176,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
           imwrite(file_name_label, target_np[i,:,:,:])
 
       # Save checkpoint 
-      if step % 1000 == 0 or (step +1) == FLAGS.max_steps:
+      if step % 500 == 0 or (step +1) == FLAGS.max_steps:
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 
@@ -192,9 +198,11 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
 
     # Prepare model.
     model = Voxel_flow_model(is_train=True)
-    prediction = model.inference(input_placeholder)
+    prediction, flow_motion, flow_mask = model.inference(input_placeholder)
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
-    reproduction_loss = model.loss(prediction, target_placeholder)
+    reproduction_loss = model.loss(prediction, flow_motion,
+            flow_mask, target_placeholder, 
+            FLAGS.lambda_motion, FLAGS.lambda_mask)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss
 
@@ -264,9 +272,9 @@ if __name__ == '__main__':
 
   if FLAGS.subset == 'train':
     
-    data_list_path_frame1 = "data_list/ucf101_train_files_frame1.txt"
-    data_list_path_frame2 = "data_list/ucf101_train_files_frame2.txt"
-    data_list_path_frame3 = "data_list/ucf101_train_files_frame3.txt"
+    data_list_path_frame1 = "data_list/frame1.txt"
+    data_list_path_frame2 = "data_list/frame2.txt"
+    data_list_path_frame3 = "data_list/frame3.txt"
     
     ucf101_dataset_frame1 = dataset.Dataset(data_list_path_frame1) 
     ucf101_dataset_frame2 = dataset.Dataset(data_list_path_frame2) 
@@ -276,9 +284,9 @@ if __name__ == '__main__':
   
   elif FLAGS.subset == 'test':
     
-    data_list_path_frame1 = "data_list/ucf101_test_files_frame1.txt"
-    data_list_path_frame2 = "data_list/ucf101_test_files_frame2.txt"
-    data_list_path_frame3 = "data_list/ucf101_test_files_frame3.txt"
+    data_list_path_frame1 = "data_list/frame1.txt"
+    data_list_path_frame2 = "data_list/frame2.txt"
+    data_list_path_frame3 = "data_list/frame3.txt"
     
     ucf101_dataset_frame1 = dataset.Dataset(data_list_path_frame1) 
     ucf101_dataset_frame2 = dataset.Dataset(data_list_path_frame2) 

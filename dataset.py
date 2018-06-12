@@ -1,6 +1,6 @@
 """Implements a dataset class for handling image data"""
 
-DATA_PATH_BASE = '~/Desktop/other/job/voxel-flow/data_list/'
+DATA_PATH_BASE = ''
 
 class Dataset(object):
   def __init__(self, data_list_file=None, process_func=None):

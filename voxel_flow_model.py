@@ -47,10 +47,9 @@ class Voxel_flow_model(object):
 
     with slim.arg_scope([slim.conv2d],
                         activation_fn=tf.nn.relu,
-                        weights_initializer=tf.truncated_normal_initializer(0.0, 0.01),
-                        weights_regularizer=slim.l2_regularizer(0.0001)):
+                        weights_initializer=tf.truncated_normal_initializer(0.0, 0.01)):
       
-      # Define network      
+      # Define network     
       batch_norm_params = {
         'decay': 0.9997,
         'epsilon': 0.001,
@@ -60,20 +59,20 @@ class Voxel_flow_model(object):
         with slim.arg_scope([slim.conv2d], normalizer_fn=slim.batch_norm,
           normalizer_params=batch_norm_params):
           # encoders
-          conv_1 = slim.conv2d(input_images, 64, [5, 5], stride=1, scope='conv1')
+          conv_1 = slim.conv2d(input_images, 16, [5, 5], stride=1, scope='conv1')
           pool_1 = slim.max_pool2d(conv_1, [2, 2], scope='pool1')
-          conv_2 = slim.conv2d(pool_1, 128, [5, 5], stride=1, scope='conv2')
+          conv_2 = slim.conv2d(pool_1, 32, [5, 5], stride=1, scope='conv2')
           pool_2 = slim.max_pool2d(conv_2, [2, 2], scope='pool2')
-          conv_3 = slim.conv2d(pool_2, 256, [3, 3], stride=1, scope='conv3')
+          conv_3 = slim.conv2d(pool_2, 64, [3, 3], stride=1, scope='conv3')
           pool_3 = slim.max_pool2d(conv_3, [2, 2], scope='pool3')
-          bottleneck = slim.conv2d(pool_3, 512, [3, 3], stride=1, scope='bottleneck')
+          bottleneck = slim.conv2d(pool_3, 128, [3, 3], stride=1, scope='bottleneck')
           # decoders
           upsamp_1 = tf.image.resize_bilinear(bottleneck, [64, 64])
           deconv_1 = slim.conv2d(tf.concat([upsamp_1, conv_3], axis=3), 
-                        256, [3, 3], stride=1, scope='deconv4')
+                        64, [3, 3], stride=1, scope='deconv4')
           upsamp_2 = tf.image.resize_bilinear(deconv_1, [128, 128])
           deconv_2 = slim.conv2d(tf.concat([upsamp_2, conv_2], axis=3), 
-                        128, [3, 3], stride=1, scope='deconv5')
+                        32, [3, 3], stride=1, scope='deconv5')
           # upsampled to input dimensions
           upsamp_A = tf.image.resize_bilinear(deconv_2, [256, 256])
           deconv_A = slim.conv2d(tf.concat([upsamp_A, conv_1], axis=3), 

@@ -26,7 +26,7 @@ def l1_regularizer(flow):
   '''
   implements L1 regularization for flow in R^[n x m]
   '''
-  total_dim = tf.cast(tf.reduce_prod(tf.cast(tf.shape(targets)), tf.float32), tf.int32)
+  total_dim = tf.cast(tf.reduce_prod(tf.cast(tf.shape(flow), tf.float32)), tf.int32)
   flow = tf.reshape(flow, shape=[total_dim, 1])
   l1_magnitude = tf.reduce_sum(tf.abs(flow))
 

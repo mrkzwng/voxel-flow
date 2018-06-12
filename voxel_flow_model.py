@@ -35,8 +35,8 @@ class Voxel_flow_model(object):
     """
     # corrected regularized loss
     self.reproduction_loss = l1_loss(predictions, targets) \
-                  + lambda_motion * l1_regularizer(flow_motion) \
-                  + lambda_mask * l1_regularizer(flow_mask)
+                  # + lambda_motion * l1_regularizer(flow_motion) \
+                  # + lambda_mask * l1_regularizer(flow_mask)
 
     return self.reproduction_loss
 

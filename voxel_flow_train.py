@@ -21,14 +21,14 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_2'
+checkpoint = './voxel_flow_checkpoints/iter_3'
 
 # due to version differences
 tf.data = dat
 
 # Define necessary FLAGS
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('train_dir', './voxel_flow_checkpoints/',
+tf.app.flags.DEFINE_string('train_dir', checkpoint,
                            """Directory where to write event logs """
                            """and checkpoint.""")
 tf.app.flags.DEFINE_string('train_image_dir', train_image_dir,

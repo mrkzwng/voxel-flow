@@ -1,0 +1,6 @@
+batch_size=16
+learning_rate=0.01
+lambda_motion=0.01
+lambda_mask=0.005
+
+No regularization in loss

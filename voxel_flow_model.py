@@ -32,8 +32,6 @@ class Voxel_flow_model(object):
   def loss(self, predictions, flow_motion, flow_mask, targets, 
            lambda_motion, lambda_mask, epsilon):
     """Compute the necessary loss for training.
-    Args:
-    Returns:
     """
     # corrected regularized loss
     # self.reproduction_loss = l1_loss(predictions, targets) \
@@ -46,6 +44,12 @@ class Voxel_flow_model(object):
                   + lambda_mask * l1_charbonnier(flow_mask, epsilon)
 
     return self.reproduction_loss
+
+  def coarse_loss(self, predictions, targets, epsilon):
+    """
+    computes loss for coarser scales
+    """
+    return(l1_charbonnier_loss(predictions, targets, epsilon))
 
   def _build_model(self, input_images):
     """Build a VAE model.
@@ -65,41 +69,101 @@ class Voxel_flow_model(object):
       with slim.arg_scope([slim.batch_norm], is_training = self.is_train, updates_collections=None):
         with slim.arg_scope([slim.conv2d], normalizer_fn=slim.batch_norm,
           normalizer_params=batch_norm_params):
-          # encoders
-          conv_1 = slim.conv2d(input_images, 16, [5, 5], stride=1, scope='conv1')
-          pool_1 = slim.max_pool2d(conv_1, [2, 2], scope='pool1')
-          conv_2 = slim.conv2d(pool_1, 32, [5, 5], stride=1, scope='conv2')
-          pool_2 = slim.max_pool2d(conv_2, [2, 2], scope='pool2')
-          conv_3 = slim.conv2d(pool_2, 64, [3, 3], stride=1, scope='conv3')
-          pool_3 = slim.max_pool2d(conv_3, [2, 2], scope='pool3')
-          bottleneck = slim.conv2d(pool_3, 128, [3, 3], stride=1, scope='bottleneck')
-          # decoders
-          upsamp_1 = tf.image.resize_bilinear(bottleneck, [64, 64])
-          deconv_1 = slim.conv2d(tf.concat([upsamp_1, conv_3], axis=3), 
-                        64, [3, 3], stride=1, scope='deconv4')
-          upsamp_2 = tf.image.resize_bilinear(deconv_1, [128, 128])
-          deconv_2 = slim.conv2d(tf.concat([upsamp_2, conv_2], axis=3), 
-                        32, [3, 3], stride=1, scope='deconv5')
-          # upsampled to input dimensions
-          upsamp_A = tf.image.resize_bilinear(deconv_2, [256, 256])
-          deconv_A = slim.conv2d(tf.concat([upsamp_A, conv_1], axis=3), 
-                        32, [5, 5], stride=1, scope='deconvA')
-          upsamp_B = tf.image.resize_bilinear(deconv_1, [256, 256])
-          deconv_B = slim.conv2d(upsamp_B, 32, [5, 5], stride=1, scope='deconvB')
-          upsamp_C = tf.image.resize_bilinear(bottleneck, [256, 256])
-          deconv_C = slim.conv2d(upsamp_C, 32, [5, 5], stride=1, scope='deconvC')
-          # concatenated
-          conv_4 = slim.conv2d(tf.concat([deconv_A, deconv_B, deconv_C], axis=3),
-                        64, [5, 5], scope='conv_4')
 
-    net = slim.conv2d(conv_4, 3, [5, 5], stride=1, activation_fn=tf.tanh,
-    normalizer_fn=None, scope='conv7')
+          # scale 64 x 64
+          input_images_64 = tf.image.resize_bilinear(input_images, [64, 64])
+          conv_1c = slim.conv2d(input_images_64, 16, [5, 5], stride=1, scope='conv1c')
+          pool_1c = slim.max_pool2d(conv_1c, [2, 2], scope='pool1c')
+          conv_2c = slim.conv2d(pool_1c, 32, [3, 3], stride=1, scope='conv2c')
+          pool_2c = slim.max_pool2d(conv_2c, [2, 2], scope='pool2c')
+          conv_3c = slim.conv2d(pool_2c, 64, [3, 3], stride=1, scope='conv3c')
+          pool_3c = slim.max_pool2d(conv_3c, [2, 2], scope='pool3c')
+          bottleneck_c = slim.conv2d(pool_3c, 128, [3, 3], stride=1, scope='bottleneck_c')
+          # decoders
+          upsamp_1c = tf.image.resize_bilinear(bottleneck_c, [16, 16])
+          deconv_1c = slim.conv2d(tf.concat([upsamp_1c, conv_3c], axis=3), 
+                        64, [3, 3], stride=1, scope='deconv4c')
+          upsamp_2c = tf.image.resize_bilinear(deconv_1c, [32, 32])
+          deconv_2c = slim.conv2d(tf.concat([upsamp_2c, conv_2c], axis=3), 
+                        32, [3, 3], stride=1, scope='deconv5c')
+          # upsample to input dimensions
+          upsamp_3c = tf.image.resize_bilinear(deconv_2c, [64, 64])
+          flow_64 = slim.conv2d(tf.concat([upsamp_3c, conv_1c], axis=3), 
+                        3, [5, 5], stride=1, scope='flow_64')
+
+
+          # scale 128 x 128
+          input_images_128 = tf.image.resize_bilinear(input_images, [128, 128])
+          conv_1b = slim.conv2d(input_images_128, 16, [5, 5], stride=1, scope='conv1b')
+          pool_1b = slim.max_pool2d(conv_1b, [2, 2], scope='pool1b')
+          conv_2b = slim.conv2d(pool_1b, 32, [5, 5], stride=1, scope='conv2b')
+          pool_2b = slim.max_pool2d(conv_2b, [2, 2], scope='pool2b')
+          conv_3b = slim.conv2d(pool_2b, 64, [3, 3], stride=1, scope='conv3b')
+          pool_3b = slim.max_pool2d(conv_3b, [2, 2], scope='pool3b')
+          bottleneck_b = slim.conv2d(pool_3b, 128, [3, 3], stride=1, scope='bottleneck_b')
+          # decoders
+          upsamp_1b = tf.image.resize_bilinear(bottleneck_b, [32, 32])
+          deconv_1b = slim.conv2d(tf.concat([upsamp_1b, conv_3b], axis=3), 
+                        64, [3, 3], stride=1, scope='deconv4b')
+          upsamp_2b = tf.image.resize_bilinear(deconv_1b, [64, 64])
+          deconv_2b = slim.conv2d(tf.concat([upsamp_2b, conv_2b], axis=3), 
+                        32, [3, 3], stride=1, scope='deconv5b')
+          # upsample to input dimensions
+          upsamp_3b = tf.image.resize_bilinear(deconv_2b, [128, 128])
+          deconv_3b = slim.conv2d(tf.concat([upsamp_3b, conv_1b], axis=3), 
+                        32, [5, 5], stride=1, scope='deconv6b')
+          # concatenate w/ coarser scale
+          deconv_64b = tf.image.resize_bilinear(flow_64, [128, 128])
+          deconv_64b = slim.conv2d(deconv_64, 32, [128, 128], stride=1, scope='deconv_64b')
+          flow_128 = slim.conv2d(tf.concat([deconv_64, deconv_3b], axis=3), 3,
+                                 [5, 5], stride=1, scope='flow_128')
+
+
+          # scale 256 x 256
+          # encoders
+          conv_1a = slim.conv2d(input_images, 16, [5, 5], stride=1, scope='conv1a')
+          pool_1a = slim.max_pool2d(conv_1a, [2, 2], scope='pool1a')
+          conv_2a = slim.conv2d(pool_1a, 32, [5, 5], stride=1, scope='conv2a')
+          pool_2a = slim.max_pool2d(conv_2a, [2, 2], scope='pool2a')
+          conv_3a = slim.conv2d(pool_2a, 64, [3, 3], stride=1, scope='conv3a')
+          pool_3a = slim.max_pool2d(conv_3a, [2, 2], scope='pool3a')
+          bottleneck_a = slim.conv2d(pool_3a, 128, [3, 3], stride=1, scope='bottleneck_a')
+          # decoders
+          upsamp_1a = tf.image.resize_bilinear(bottleneck_a, [64, 64])
+          deconv_1a = slim.conv2d(tf.concat([upsamp_1a, conv_3a], axis=3), 
+                        64, [3, 3], stride=1, scope='deconv4a')
+          upsamp_2a = tf.image.resize_bilinear(deconv_1a, [128, 128])
+          deconv_2a = slim.conv2d(tf.concat([upsamp_2a, conv_2a], axis=3), 
+                        32, [3, 3], stride=1, scope='deconv5a')
+          # upsample to input dimensions
+          upsamp_3a = tf.image.resize_bilinear(deconv_2a, [256, 256])
+
+          deconv_256 = slim.conv2d(tf.concat([upsamp_3a, conv_1a], axis=3), 
+                        32, [5, 5], stride=1, scope='deconv6a')
+          # concatenate w/ coarser scale
+          deconv_64a = tf.image.resize_bilinear(flow_64, [256, 256])
+          deconv_64a = slim.conv2d(deconv_64, 32, [256, 256], stride=1, scope='deconv_64a')
+          deconv_128 = tf.image.resize_bilinear(flow_128, [256, 256])
+          deconv_128 = slim.conv2d(deconv_128, 32, [5, 5], stride=1, scope='deconv_128')
+          conv_concat = slim.conv2d(tf.concat([deconv_64a, deconv_128, deconv_256], axis=3),
+                                64, [5, 5], stride=1, scope='conv_concat')
+
+    net = slim.conv2d(conv_concat, 3, [5, 5], stride=1, activation_fn=tf.tanh,
+                      normalizer_fn=None, scope='flow')
+
+    net, flow_motion, flow_mask = self._synthesize_frame(net)
+    net128, __, __ = self._synthesize_frame(flow_128)
+    net64, __, __ = self._synthesize_frame(flow_64)
+
+    return(net, flow_motion, flow_mask, net128, net64)
+
+  def _synthesize_frame(self, net):
     net_copy = net
     
     flow = net[:, :, :, 0:2]
     mask = tf.expand_dims(net[:, :, :, 2], 3)
 
-    grid_x, grid_y = meshgrid(256, 256)
+    grid_x, grid_y = meshgrid(net.shape[1], net.shape[2])
     grid_x = tf.tile(grid_x, [FLAGS.batch_size, 1, 1])
     grid_y = tf.tile(grid_y, [FLAGS.batch_size, 1, 1])
 
@@ -120,6 +184,6 @@ class Voxel_flow_model(object):
 
     # for the correct loss function
     flow_motion = net_copy[:, :, :, 0:2]
-    flow_mask = tf.expand_dims(net[:, :, :, 2], 3)
+    flow_mask = tf.expand_dims(net_copy[:, :, :, 2], 3)
 
     return(net, flow_motion, flow_mask)

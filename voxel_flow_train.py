@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 16, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.0001,
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.00001,
                           """Initial learning rate.""")
 # added regularization parameters
 tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
@@ -92,14 +92,18 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
 
     # Prepare model.
     model = Voxel_flow_model(is_train=True)
-    prediction, flow_motion, flow_mask = model.inference(input_placeholder)
+    prediction, flow_motion, flow_mask, prediction128, prediction64 = model.inference(input_placeholder)
+    target_64 = tf.image.resize_bilinear(target_placeholder, [64, 64])
+    target_128 = tf.image.resize_bilinear(target_placeholder, [128, 128])
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
     reproduction_loss = model.loss(prediction, flow_motion, 
                               flow_mask, target_placeholder,
                               FLAGS.lambda_motion, FLAGS.lambda_mask, 
                               FLAGS.epsilon)
+    coarse_loss = model.coarse_loss(prediction128, target_128) \
+                        + model.coarse_loss(prediction64, target_64)
     # total_loss = reproduction_loss + prior_loss
-    total_loss = reproduction_loss
+    total_loss = reproduction_loss + coarse_loss
     
     # Perform learning rate scheduling.
     learning_rate = FLAGS.initial_learning_rate
@@ -201,21 +205,23 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
     # target_resized = tf.image.resize_area(target_placeholder,[128, 128])
 
     # Prepare model.
-    model = Voxel_flow_model(is_train=True)
+    model = Voxel_flow_model(is_train=False)
     prediction, flow_motion, flow_mask = model.inference(input_placeholder)
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
     reproduction_loss = model.loss(prediction, flow_motion,
             flow_mask, target_placeholder, 
-            FLAGS.lambda_motion, FLAGS.lambda_mask)
+            FLAGS.lambda_motion, FLAGS.lambda_mask,
+            FLAGS.epsilon)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss
 
-    # Create a saver and load.
+    # Create a saver and load.,
     saver = tf.train.Saver(tf.all_variables())
     sess = tf.Session()
 
     # Restore checkpoint from file.
-    if FLAGS.pretrained_model_checkpoint_path:
+    if FLAGS.pretrained_model_checkpoint_path \
+            and tf.train.get_checkpoint_state(FLAGS.pretrained_model_checkpoint_path):
       assert tf.gfile.Exists(FLAGS.pretrained_model_checkpoint_path)
       ckpt = tf.train.get_checkpoint_state(
                FLAGS.pretrained_model_checkpoint_path)
@@ -223,6 +229,9 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
       restorer.restore(sess, ckpt.model_checkpoint_path)
       print('%s: Pre-trained model restored from %s' %
         (datetime.now(), ckpt.model_checkpoint_path))
+    else:
+      print('No existing model checkpoint in '+checkpoint)
+      os.exit(0)
     
     # Process on test dataset.
     data_list_frame1 = dataset_frame1.read_data_list_file()
@@ -235,6 +244,12 @@ def test(dataset_frame1, dataset_frame2, dataset_frame3):
 
     i = 0 
     PSNR = 0
+
+
+    """ TODO
+    Replace below dataset_frame*.process_func lines with lines 65-84 in 'train'
+    """
+
 
     for id_img in range(0, data_size):  
       # Load single data.

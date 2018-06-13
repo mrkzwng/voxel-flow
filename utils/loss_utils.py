@@ -8,6 +8,19 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
+
+def l1_charbonnier(values, epsilon):
+  """
+  implements the generalized Charbonnier distance
+  """
+  return(tf.sqrt(tf.reduce_sum(tf.square(values)) + epsilon))
+
+def l1_charbonnier_loss(predictions, targets, epsilon):
+  """
+  implements loss via generalized Charbonnier
+  """
+  return(l1_charbonnier(predictions - targets, epsilon))
+
 def l1_loss(predictions, targets):
   """Implements tensorflow l1 loss.
   Args:

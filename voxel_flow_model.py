@@ -5,7 +5,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from utils.loss_utils import l1_loss, l2_loss, vae_loss, l1_regularizer 
+from utils.loss_utils import l1_loss, l2_loss, vae_loss, l1_regularizer
+from utils.loss_utils import l1_charbonnier_loss, l1_charbonnier
 from utils.geo_layer_utils import vae_gaussian_layer
 from utils.geo_layer_utils import bilinear_interp
 from utils.geo_layer_utils import meshgrid
@@ -28,15 +29,21 @@ class Voxel_flow_model(object):
     """
     return self._build_model(input_images) 
 
-  def loss(self, predictions, flow_motion, flow_mask, targets, lambda_motion, lambda_mask):
+  def loss(self, predictions, flow_motion, flow_mask, targets, 
+           lambda_motion, lambda_mask, epsilon):
     """Compute the necessary loss for training.
     Args:
     Returns:
     """
     # corrected regularized loss
-    self.reproduction_loss = l1_loss(predictions, targets) \
+    # self.reproduction_loss = l1_loss(predictions, targets) \
                   # + lambda_motion * l1_regularizer(flow_motion) \
                   # + lambda_mask * l1_regularizer(flow_mask)
+
+    # charbonnier loss
+    self.reproduction_loss = l1_charbonnier_loss(predictions, targets, epsilon) \
+                  + lambda_motion * l1_charbonnier(flow_motion, epsilon) \
+                  + lambda_mask * l1_charbonnier(flow_mask, epsilon)
 
     return self.reproduction_loss
 

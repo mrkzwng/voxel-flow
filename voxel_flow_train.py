@@ -21,9 +21,9 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_3'
+checkpoint = './voxel_flow_checkpoints/iter_7'
 
-# due to version differences
+# hack due to version differences
 tf.data = dat
 
 # Define necessary FLAGS
@@ -50,6 +50,9 @@ tf.app.flags.DEFINE_float('lambda_motion', 0.01,
             """Regularization term for motion components""")
 tf.app.flags.DEFINE_float('lambda_mask', 0.005, 
             """Regularization term for time component""")
+tf.app.flags.DEFINE_float('epsilon', 0.001,
+            """Charbonnier distance parameter""")
+
 
 def _read_image(filename):
   image_string = tf.read_file(filename)
@@ -93,7 +96,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # reproduction_loss, prior_loss = model.loss(prediction, target_placeholder)
     reproduction_loss = model.loss(prediction, flow_motion, 
                               flow_mask, target_placeholder,
-                              FLAGS.lambda_motion, FLAGS.lambda_mask)
+                              FLAGS.lambda_motion, FLAGS.lambda_mask, 
+                              FLAGS.epsilon)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss
     

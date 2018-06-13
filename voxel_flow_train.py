@@ -100,8 +100,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
                               flow_mask, target_placeholder,
                               FLAGS.lambda_motion, FLAGS.lambda_mask, 
                               FLAGS.epsilon)
-    coarse_loss = model.coarse_loss(prediction128, target_128) \
-                        + model.coarse_loss(prediction64, target_64)
+    coarse_loss = model.coarse_loss(prediction128, target_128, FLAGS.epsilon) \
+                        + model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss + coarse_loss
     
@@ -169,12 +169,12 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
       if step % 10 == 0:
         print("Loss at step %d: %f" % (step, loss_value))
 
-      if step % 100 == 0:
+      if step % 10 == 0:
         # Output Summary 
         summary_str = sess.run(summary_op)
         summary_writer.add_summary(summary_str, step)
 
-      if step % 500 == 0:
+      if step % 10 == 0:
         # Run a batch of images 
         prediction_np, target_np = sess.run([prediction, target_placeholder])
         for i in range(0,prediction_np.shape[0]):
@@ -184,7 +184,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
           imwrite(file_name_label, target_np[i,:,:,:])
 
       # Save checkpoint 
-      if step % 500 == 0 or (step +1) == FLAGS.max_steps:
+      if step % 10 == 0 or (step +1) == FLAGS.max_steps:
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 

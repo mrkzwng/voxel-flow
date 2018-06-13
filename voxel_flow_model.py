@@ -114,8 +114,8 @@ class Voxel_flow_model(object):
                         32, [5, 5], stride=1, scope='deconv6b')
           # concatenate w/ coarser scale
           deconv_64b = tf.image.resize_bilinear(flow_64, [128, 128])
-          deconv_64b = slim.conv2d(deconv_64, 32, [128, 128], stride=1, scope='deconv_64b')
-          flow_128 = slim.conv2d(tf.concat([deconv_64, deconv_3b], axis=3), 3,
+          deconv_64b = slim.conv2d(deconv_64b, 32, [128, 128], stride=1, scope='deconv_64b')
+          flow_128 = slim.conv2d(tf.concat([deconv_64b, deconv_3b], axis=3), 3,
                                  [5, 5], stride=1, scope='flow_128')
 
 
@@ -142,7 +142,7 @@ class Voxel_flow_model(object):
                         32, [5, 5], stride=1, scope='deconv6a')
           # concatenate w/ coarser scale
           deconv_64a = tf.image.resize_bilinear(flow_64, [256, 256])
-          deconv_64a = slim.conv2d(deconv_64, 32, [256, 256], stride=1, scope='deconv_64a')
+          deconv_64a = slim.conv2d(deconv_64a, 32, [256, 256], stride=1, scope='deconv_64a')
           deconv_128 = tf.image.resize_bilinear(flow_128, [256, 256])
           deconv_128 = slim.conv2d(deconv_128, 32, [5, 5], stride=1, scope='deconv_128')
           conv_concat = slim.conv2d(tf.concat([deconv_64a, deconv_128, deconv_256], axis=3),
@@ -151,13 +151,13 @@ class Voxel_flow_model(object):
     net = slim.conv2d(conv_concat, 3, [5, 5], stride=1, activation_fn=tf.tanh,
                       normalizer_fn=None, scope='flow')
 
-    net, flow_motion, flow_mask = self._synthesize_frame(net)
-    net128, __, __ = self._synthesize_frame(flow_128)
-    net64, __, __ = self._synthesize_frame(flow_64)
+    net, flow_motion, flow_mask = self._synthesize_frame(net, input_images)
+    net128, __, __ = self._synthesize_frame(flow_128, input_images_128)
+    net64, __, __ = self._synthesize_frame(flow_64, input_images_64)
 
     return(net, flow_motion, flow_mask, net128, net64)
 
-  def _synthesize_frame(self, net):
+  def _synthesize_frame(self, net, input_images):
     net_copy = net
     
     flow = net[:, :, :, 0:2]

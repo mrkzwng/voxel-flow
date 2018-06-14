@@ -21,7 +21,7 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_12'
+checkpoint = './voxel_flow_checkpoints/iter_16'
 
 # hack due to version differences
 tf.data = dat
@@ -42,13 +42,13 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
                            """before beginning any training.""")
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('batch_size', 16, 'The number of samples in each batch.')
+tf.app.flags.DEFINE_integer('batch_size', 32, 'The number of samples in each batch.')
 tf.app.flags.DEFINE_float('initial_learning_rate', 0.0001,
                           """Initial learning rate.""")
 # added regularization parameters
-tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
+tf.app.flags.DEFINE_float('lambda_motion', 0.1, 
             """Regularization term for motion components""")
-tf.app.flags.DEFINE_float('lambda_mask', 0.005, 
+tf.app.flags.DEFINE_float('lambda_mask', 0, 
             """Regularization term for time component""")
 tf.app.flags.DEFINE_float('epsilon', 0.001,
             """Charbonnier distance parameter""")
@@ -100,8 +100,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
                               flow_mask, target_placeholder,
                               FLAGS.lambda_motion, FLAGS.lambda_mask, 
                               FLAGS.epsilon)
-    coarse_loss = model.coarse_loss(prediction128, target_128, FLAGS.epsilon) \
-                        + model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
+    mod128_loss = model.coarse_loss(prediction128, target_128, FLAGS.epsilon) 
+    mode64_loss = model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss + coarse_loss
     
@@ -117,6 +117,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     summaries = tf.get_collection(tf.GraphKeys.SUMMARIES)
     summaries.append(tf.summary.scalar('total_loss', total_loss))
     summaries.append(tf.summary.scalar('reproduction_loss', reproduction_loss))
+    summaries.append(tf.summary.scalar('downsample_128_loss', mod128_loss))
+    summaries.append(tf.summary.scalar('downsample_64_loss', mod64_loss))
     # summaries.append(tf.summary.scalar('prior_loss', prior_loss))
     summaries.append(tf.summary.image('Input Image (before)', input_placeholder[:, :, :, 0:3], 3))
     summaries.append(tf.summary.image('Input Image (after)', input_placeholder[:, :, :, 3:6], 3))

@@ -33,15 +33,20 @@ class Voxel_flow_model(object):
            lambda_motion, lambda_mask, epsilon):
     """Compute the necessary loss for training.
     """
-    # corrected regularized loss
+    # corrected l1 regularized loss
     # self.reproduction_loss = l1_loss(predictions, targets) \
                   # + lambda_motion * l1_regularizer(flow_motion) \
                   # + lambda_mask * l1_regularizer(flow_mask)
 
-    # charbonnier loss
+    # Charbonnier loss
     self.reproduction_loss = l1_charbonnier_loss(predictions, targets, epsilon) \
                   + lambda_motion * l1_charbonnier(flow_motion, epsilon) \
                   + lambda_mask * l1_charbonnier(flow_mask, epsilon)
+# 
+    # # Charbonnier regularization with l1 loss
+    # self.reproduction_loss = l1_loss(predictions, targets) \
+    #               + lambda_motion * l1_charbonnier(flow_motion, epsilon) \
+    #               + lambda_mask * l1_charbonnier(flow_mask, epsilon)
 
     return self.reproduction_loss
 
@@ -113,7 +118,7 @@ class Voxel_flow_model(object):
           deconv_3b = slim.conv2d(tf.concat([upsamp_3b, conv_1b], axis=3), 
                         24, [5, 5], stride=1, scope='deconv6b')
           # concatenate w/ coarser scale
-          deconv_64b = tf.image.resize_bilinear(flow_64, [128, 128])
+          deconv_64b = tf.image.resize_bilinear(flow_64[:, :, :, :2], [128, 128])
           deconv_64b = slim.conv2d(deconv_64b, 24, [128, 128], stride=1, scope='deconv_64b')
           flow_128 = slim.conv2d(tf.concat([deconv_64b, deconv_3b], axis=3), 3,
                                  [5, 5], stride=1, scope='flow_128')
@@ -141,9 +146,9 @@ class Voxel_flow_model(object):
           deconv_256 = slim.conv2d(tf.concat([upsamp_3a, conv_1a], axis=3), 
                         32, [5, 5], stride=1, scope='deconv6a')
           # concatenate w/ coarser scale
-          deconv_64a = tf.image.resize_bilinear(flow_64, [256, 256])
+          deconv_64a = tf.image.resize_bilinear(flow_64[:, :, :, :2], [256, 256])
           deconv_64a = slim.conv2d(deconv_64a, 32, [256, 256], stride=1, scope='deconv_64a')
-          deconv_128 = tf.image.resize_bilinear(flow_128, [256, 256])
+          deconv_128 = tf.image.resize_bilinear(flow_128[:, :, :, :2], [256, 256])
           deconv_128 = slim.conv2d(deconv_128, 32, [5, 5], stride=1, scope='deconv_128')
           conv_concat = slim.conv2d(tf.concat([deconv_64a, deconv_128, deconv_256], axis=3),
                                 64, [5, 5], stride=1, scope='conv_concat')

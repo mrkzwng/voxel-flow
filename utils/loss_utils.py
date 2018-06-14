@@ -13,7 +13,8 @@ def l1_charbonnier(values, epsilon):
   """
   implements the generalized Charbonnier distance
   """
-  return(tf.sqrt(tf.reduce_sum(tf.square(values)) + epsilon))
+  loss = tf.reduce_mean(tf.sqrt(tf.square(values) + tf.square(epsilon)))
+  return(loss)
 
 def l1_charbonnier_loss(predictions, targets, epsilon):
   """

@@ -21,7 +21,7 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_11'
+checkpoint = './voxel_flow_checkpoints/iter_12'
 
 # hack due to version differences
 tf.data = dat
@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 16, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.001,
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.0001,
                           """Initial learning rate.""")
 # added regularization parameters
 tf.app.flags.DEFINE_float('lambda_motion', 0.01, 

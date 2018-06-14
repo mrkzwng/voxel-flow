@@ -4,7 +4,7 @@ lambda_motion=0.01
 lambda_mask=0.005
 epsilon=0.001
 
-Fast motion video
+Slow motion video
 Charbonnier loss
 Charbonnier regularization
 Multi-scale

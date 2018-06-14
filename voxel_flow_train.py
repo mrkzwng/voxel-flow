@@ -21,7 +21,7 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_9'
+checkpoint = './voxel_flow_checkpoints/iter_11'
 
 # hack due to version differences
 tf.data = dat
@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 16, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.00001,
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.001,
                           """Initial learning rate.""")
 # added regularization parameters
 tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
@@ -174,7 +174,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
         summary_str = sess.run(summary_op)
         summary_writer.add_summary(summary_str, step)
 
-      if step % 10 == 0:
+      if step % 50 == 0:
         # Run a batch of images 
         prediction_np, target_np = sess.run([prediction, target_placeholder])
         for i in range(0,prediction_np.shape[0]):
@@ -184,7 +184,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
           imwrite(file_name_label, target_np[i,:,:,:])
 
       # Save checkpoint 
-      if step % 10 == 0 or (step +1) == FLAGS.max_steps:
+      if step % 50 == 0 or (step +1) == FLAGS.max_steps:
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 

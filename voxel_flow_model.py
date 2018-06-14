@@ -72,20 +72,20 @@ class Voxel_flow_model(object):
 
           # scale 64 x 64
           input_images_64 = tf.image.resize_bilinear(input_images, [64, 64])
-          conv_1c = slim.conv2d(input_images_64, 16, [5, 5], stride=1, scope='conv1c')
+          conv_1c = slim.conv2d(input_images_64, 8, [5, 5], stride=1, scope='conv1c')
           pool_1c = slim.max_pool2d(conv_1c, [2, 2], scope='pool1c')
-          conv_2c = slim.conv2d(pool_1c, 32, [3, 3], stride=1, scope='conv2c')
+          conv_2c = slim.conv2d(pool_1c, 16, [3, 3], stride=1, scope='conv2c')
           pool_2c = slim.max_pool2d(conv_2c, [2, 2], scope='pool2c')
-          conv_3c = slim.conv2d(pool_2c, 64, [3, 3], stride=1, scope='conv3c')
+          conv_3c = slim.conv2d(pool_2c, 32, [3, 3], stride=1, scope='conv3c')
           pool_3c = slim.max_pool2d(conv_3c, [2, 2], scope='pool3c')
-          bottleneck_c = slim.conv2d(pool_3c, 128, [3, 3], stride=1, scope='bottleneck_c')
+          bottleneck_c = slim.conv2d(pool_3c, 64, [3, 3], stride=1, scope='bottleneck_c')
           # decoders
           upsamp_1c = tf.image.resize_bilinear(bottleneck_c, [16, 16])
           deconv_1c = slim.conv2d(tf.concat([upsamp_1c, conv_3c], axis=3), 
-                        64, [3, 3], stride=1, scope='deconv4c')
+                        32, [3, 3], stride=1, scope='deconv4c')
           upsamp_2c = tf.image.resize_bilinear(deconv_1c, [32, 32])
           deconv_2c = slim.conv2d(tf.concat([upsamp_2c, conv_2c], axis=3), 
-                        32, [3, 3], stride=1, scope='deconv5c')
+                        16, [3, 3], stride=1, scope='deconv5c')
           # upsample to input dimensions
           upsamp_3c = tf.image.resize_bilinear(deconv_2c, [64, 64])
           flow_64 = slim.conv2d(tf.concat([upsamp_3c, conv_1c], axis=3), 
@@ -94,27 +94,27 @@ class Voxel_flow_model(object):
 
           # scale 128 x 128
           input_images_128 = tf.image.resize_bilinear(input_images, [128, 128])
-          conv_1b = slim.conv2d(input_images_128, 16, [5, 5], stride=1, scope='conv1b')
+          conv_1b = slim.conv2d(input_images_128, 12, [5, 5], stride=1, scope='conv1b')
           pool_1b = slim.max_pool2d(conv_1b, [2, 2], scope='pool1b')
-          conv_2b = slim.conv2d(pool_1b, 32, [5, 5], stride=1, scope='conv2b')
+          conv_2b = slim.conv2d(pool_1b, 24, [5, 5], stride=1, scope='conv2b')
           pool_2b = slim.max_pool2d(conv_2b, [2, 2], scope='pool2b')
-          conv_3b = slim.conv2d(pool_2b, 64, [3, 3], stride=1, scope='conv3b')
+          conv_3b = slim.conv2d(pool_2b, 48, [3, 3], stride=1, scope='conv3b')
           pool_3b = slim.max_pool2d(conv_3b, [2, 2], scope='pool3b')
-          bottleneck_b = slim.conv2d(pool_3b, 128, [3, 3], stride=1, scope='bottleneck_b')
+          bottleneck_b = slim.conv2d(pool_3b, 96, [3, 3], stride=1, scope='bottleneck_b')
           # decoders
           upsamp_1b = tf.image.resize_bilinear(bottleneck_b, [32, 32])
           deconv_1b = slim.conv2d(tf.concat([upsamp_1b, conv_3b], axis=3), 
-                        64, [3, 3], stride=1, scope='deconv4b')
+                        48, [3, 3], stride=1, scope='deconv4b')
           upsamp_2b = tf.image.resize_bilinear(deconv_1b, [64, 64])
           deconv_2b = slim.conv2d(tf.concat([upsamp_2b, conv_2b], axis=3), 
-                        32, [3, 3], stride=1, scope='deconv5b')
+                        24, [3, 3], stride=1, scope='deconv5b')
           # upsample to input dimensions
           upsamp_3b = tf.image.resize_bilinear(deconv_2b, [128, 128])
           deconv_3b = slim.conv2d(tf.concat([upsamp_3b, conv_1b], axis=3), 
-                        32, [5, 5], stride=1, scope='deconv6b')
+                        24, [5, 5], stride=1, scope='deconv6b')
           # concatenate w/ coarser scale
           deconv_64b = tf.image.resize_bilinear(flow_64, [128, 128])
-          deconv_64b = slim.conv2d(deconv_64b, 32, [128, 128], stride=1, scope='deconv_64b')
+          deconv_64b = slim.conv2d(deconv_64b, 24, [128, 128], stride=1, scope='deconv_64b')
           flow_128 = slim.conv2d(tf.concat([deconv_64b, deconv_3b], axis=3), 3,
                                  [5, 5], stride=1, scope='flow_128')
 

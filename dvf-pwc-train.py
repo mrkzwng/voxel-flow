@@ -17,11 +17,13 @@ from voxel_flow_model import Voxel_flow_model
 from utils.image_utils import imwrite
 from functools import partial
 import pdb
+from pwc_utils import trainable_synthesize_frame
+
 
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_12'
+checkpoint = './pwc_checkpoints/iter_1'
 
 # hack due to version differences
 tf.data = dat
@@ -96,8 +98,9 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # input_resized = tf.image.resize_area(input_placeholder, [128, 128])
     # target_resized = tf.image.resize_area(target_placeholder,[128, 128])
 
+
     # Prepare model.
-    model = Voxel_flow_model(is_train=True)
+    model = PWCNet()
     prediction, flow_motion, flow_mask, prediction128, prediction64 = model.inference(input_placeholder)
     target_64 = tf.image.resize_bilinear(target_placeholder, [64, 64])
     target_128 = tf.image.resize_bilinear(target_placeholder, [128, 128])

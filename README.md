@@ -1,58 +1,38 @@
-# Video Frame Synthesis using Deep Voxel Flow
-We address the problem of synthesizing new video frames in an existing video, either in-between existing frames (interpolation), or subsequent to them (extrapolation). Our method requires no human supervision, and any video can be used as training data by dropping, and then learning to predict, existing frames. `Deep Voxel Flow (DVF)` is efficient, and can be applied at any video resolution. We demonstrate that our method produces results that both quantitatively and qualitatively improve upon the state-of-the-art.
+# PWC-Net_tf
+PWC-Network with TensorFlow
+![estimated flow](https://i.imgur.com/DfN8glU.png)
 
-[[Project]](https://liuziwei7.github.io/projects/VoxelFlow) [[Paper]](https://arxiv.org/abs/1702.02463) [[Demo]](https://liuziwei7.github.io/projects/voxelflow/demo.html)      
+input image0, estimated flow at each 5 scale, ground truth flow, input image1
 
-<img src='./misc/demo.gif' width=810>
 
-## Overview
-`Deep Voxel Flow (DVF)` is the author's re-implementation of the video frame synthesizer described in:  
-"Video Frame Synthesis using Deep Voxel Flow"   
-[Ziwei Liu](https://liuziwei7.github.io/), [Raymond A. Yeh](http://www.isle.illinois.edu/~yeh17/), [Xiaoou Tang](http://www.ie.cuhk.edu.hk/people/xotang.shtml), [Yiming Liu](http://bitstream9.me/), [Aseem Agarwala](http://www.agarwala.org/) (CUHK & UIUC & Google Research)
-in International Conference on Computer Vision (ICCV) 2017, Oral Presentation
+# Acknowledgments
+- [NVIDIA/flownet2-pytorch](https://github.com/NVIDIA/flownet2-pytorch): framework, data transformers, loss functions, and many details about flow estimation.
+- [nameloss-Chatoyant/PWC-Net_pytorch](https://github.com/nameless-Chatoyant/PWC-Net_pytorch.git): Referenced implmentation.
 
-<img src='./misc/demo_teaser.jpg' width=800>
 
-Further information please contact [Ziwei Liu](https://liuziwei7.github.io/).
+**Working confirmed. I hope this helps you.**  
+Unofficial implementation of CVPR2018 paper: Deqing Sun *et al.* **"PWC-Net: CNNs for Optical Flow Using Pyramid, Warping, and Cost Volume"**. [arXiv](https://arxiv.org/abs/1709.02371)
 
-## Requirements
-* [TensorFlow](https://www.tensorflow.org/)
 
-## Other Implementations
-* [tensorflow-voxel-flow](https://git.sesse.net/?p=voxel-flow)
-* [pytorch-voxel-flow](https://github.com/lxx1991/pytorch-voxel-flow) 
+# Usage
+- Requirements
+    - Python 3.6+
+    - PyTorch 0.4.0 (mainly in in data handling)
+    - TensorFlow 1.8
 
-## Data Preparation
-* Training Data: extract frame triplets from `UCF101` with obvious motion.
-* [Testing Data](https://drive.google.com/open?id=0B7EVK8r0v71pdHBNdXB6TE1wSTQ)
-* [Motion Masks](https://drive.google.com/open?id=1Uc7ZPsiPf-ViuZusdmz5D4P8E5VewhH6)
+- `model_3000epoch/model_3007.ckpt` is fully trained by [SintelClean](http://files.is.tue.mpg.de/sintel/MPI-Sintel-complete.zip) dataset.
 
-## Getting started
-* Run the training script:
-``` bash
-python voxel_flow_train.py --subset=train
-```
-* Run the testing script:
-``` bash
-python voxel_flow_train.py --subset=test
-```
-* Run the evaluation script:
-``` bash
-matlab eval_voxelflow.m
-```
-
-## License and Citation
-The use of this software is RESTRICTED to **non-commercial research and educational purposes**.
+## Training (the case SintelClean)
 
 ```
-@inproceedings{liu2017voxelflow,
- author = {Ziwei Liu, Raymond Yeh, Xiaoou Tang, Yiming Liu, and Aseem Agarwala},
- title = {Video Frame Synthesis using Deep Voxel Flow},
- booktitle = {Proceedings of International Conference on Computer Vision (ICCV)},
- month = {October},
- year = {2017} 
-}
+# Training from scratch
+python train.py --dataset SintelClean --dataset_dir path/to/MPI-Sintel-complete 
 ```
 
-## Disclaimer
-This is not an official Google product.
+```
+# Start with learned checkpoint
+python train.py --dataset SintelClean --dataset_dir path/to/MPI-Sintel-complete --resume model_3000epoch/model_3007.ckpt
+```
+
+After running above script, utilize GPU-id is asked, (-1:CPU). You can use other learning configs (like `--n_epoch` or `--batch_size`) see all arguments in `train.py`, regards.
+

@@ -1,5 +1,5 @@
 #! /bin/bash
-set -e
+# set -e
 
 # Extract frame triplets from the UCF-101 dataset
 # (http://crcv.ucf.edu/data/UCF101.php). Run as follows:

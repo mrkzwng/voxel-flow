@@ -3,7 +3,7 @@ from __future__ import print_function
 import glob
 import numpy as np
 import os 
-import Queue
+import queue
 import random
 import scipy
 from scipy import misc
@@ -54,8 +54,8 @@ class PrefetchQueue(object):
       self.prefetch_size = 4 * batch_size
 
     # Start prefetching thread
-    # self.prefetch_queue = Queue.Queue(maxsize=prefetch_size)
-    self.prefetch_queue = Queue.PriorityQueue(maxsize=prefetch_size)
+    # self.prefetch_queue = queue.Queue(maxsize=prefetch_size)
+    self.prefetch_queue = queue.PriorityQueue(maxsize=prefetch_size)
     for k in range(num_workers):
       t = threading.Thread(target=prefetch_job,
         args=(self.load_fn, self.prefetch_queue, self.data_list,
@@ -67,7 +67,7 @@ class PrefetchQueue(object):
     data_list = []
     for k in range(0, self.batch_size):
       # if self.prefetch_queue.empty():
-      #   print('Prefetch Queue is empty, waiting for data to be read.')
+      #   print('Prefetch queue is empty, waiting for data to be read.')
       _, data_dummy = self.prefetch_queue.get(block=True)
       data = data_dummy.data
       data_list.append(np.expand_dims(data,0))

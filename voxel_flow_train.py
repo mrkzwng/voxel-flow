@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 8, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.000001,
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.00000001,
                           """Initial learning rate.""")
 # added regularization parameters
 tf.app.flags.DEFINE_float('lambda_motion', 0.01, 

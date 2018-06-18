@@ -21,7 +21,7 @@ import pdb
 # directories
 train_image_dir = '../results/train/'
 test_image_dir = '../results/test/'
-checkpoint = './voxel_flow_checkpoints/iter_16'
+checkpoint = './voxel_flow_checkpoints/iter_20'
 
 # hack due to version differences
 tf.data = dat
@@ -42,15 +42,15 @@ tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
                            """before beginning any training.""")
 tf.app.flags.DEFINE_integer('max_steps', 10000000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('batch_size', 32, 'The number of samples in each batch.')
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.0001,
+tf.app.flags.DEFINE_integer('batch_size', 8, 'The number of samples in each batch.')
+tf.app.flags.DEFINE_float('initial_learning_rate', 0.000001,
                           """Initial learning rate.""")
 # added regularization parameters
-tf.app.flags.DEFINE_float('lambda_motion', 0.1, 
+tf.app.flags.DEFINE_float('lambda_motion', 0.01, 
             """Regularization term for motion components""")
-tf.app.flags.DEFINE_float('lambda_mask', 0, 
+tf.app.flags.DEFINE_float('lambda_mask', 0.005, 
             """Regularization term for time component""")
-tf.app.flags.DEFINE_float('epsilon', 0.001,
+tf.app.flags.DEFINE_float('epsilon', 0.001,                                         
             """Charbonnier distance parameter""")
 
 
@@ -101,7 +101,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
                               FLAGS.lambda_motion, FLAGS.lambda_mask, 
                               FLAGS.epsilon)
     mod128_loss = model.coarse_loss(prediction128, target_128, FLAGS.epsilon) 
-    mode64_loss = model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
+    mod64_loss = model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
+    coarse_loss = mod128_loss + mod64_loss
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss + coarse_loss
     
@@ -176,12 +177,12 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
         summary_str = sess.run(summary_op)
         summary_writer.add_summary(summary_str, step)
 
-      if step % 50 == 0:
+      if step % 50 in {0, 1, 2}:
         # Run a batch of images 
         prediction_np, target_np = sess.run([prediction, target_placeholder])
         for i in range(0,prediction_np.shape[0]):
-          file_name = FLAGS.train_image_dir+str(i)+'_out.png'
-          file_name_label = FLAGS.train_image_dir+str(i)+'_gt.png'
+          file_name = FLAGS.train_image_dir+'_step'+str(step)+'_out.png'
+          file_name_label = FLAGS.train_image_dir+'_step'+str(step)+'_gt.png'
           imwrite(file_name, prediction_np[i,:,:,:])
           imwrite(file_name_label, target_np[i,:,:,:])
 

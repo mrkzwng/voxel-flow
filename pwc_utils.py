@@ -7,15 +7,8 @@ from utils.geo_layer_utils import meshgrid
 def trainable_synthesize_frame(self, net, input_images):
     net_copy = net
     
-    # flow = net[:, :, :, 0:2]
-    # mask = tf.expand_dims(net[:, :, :, 2], 3)
-    # trainable mask, i.e. delta t flow
-    flow = net
-    mask = tf.Variable(name='flow_t',
-    				   shape=[net.shape[0], net.shape[1], net.shape[2], 1],
-    				   dtype=tf.float32, 
-    				   initializer=tf.contrib.layers.xavier_initializer()
-    				   )
+    flow = net[:, :, :, 0:2]
+    mask = tf.expand_dims(net[:, :, :, 2], 3)
 
     grid_x, grid_y = meshgrid(net.shape[1], net.shape[2])
     grid_x = tf.tile(grid_x, [FLAGS.batch_size, 1, 1])
@@ -44,13 +37,13 @@ def trainable_synthesize_frame(self, net, input_images):
 
 
 def reproduction_loss(predictions, flow_motion, flow_mask, targets,
-					  lambda_motion, lambda_mask, epsilon, regularize=True):
+                      lambda_motion, lambda_mask, epsilon, regularize=True):
 
-	if regularize == True:
-		loss = l1_charbonnier_loss(predictions, targets, epsilon) \
-	                  + lambda_motion * l1_charbonnier(flow_motion, epsilon) \
-	                  + lambda_mask * l1_charbonnier(flow_mask, epsilon)
-	else:
-		loss = l1_charbonnier_loss(predictions, targets, epsilon)
+    if regularize == True:
+        loss = l1_charbonnier_loss(predictions, targets, epsilon) \
+                      + lambda_motion * l1_charbonnier(flow_motion, epsilon) \
+                      + lambda_mask * l1_charbonnier(flow_mask, epsilon)
+    else:
+        loss = l1_charbonnier_loss(predictions, targets, epsilon)
 
-	return(loss)
+    return(loss)

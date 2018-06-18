@@ -17,7 +17,7 @@ from voxel_flow_model import Voxel_flow_model
 from utils.image_utils import imwrite
 from functools import partial
 import pdb
-from pwc_utils import trainable_synthesize_frame
+from pwc_utils import trainable_synthesize_frame, reproduction_loss
 
 
 # directories
@@ -40,9 +40,9 @@ tf.app.flags.DEFINE_string('train_dir', checkpoint,
                            """Directory where to write event logs """
                            """and checkpoint.""")
 tf.app.flags.DEFINE_string('train_image_dir', train_image_dir,
-			   """Directory where to output images.""")
+         """Directory where to output images.""")
 tf.app.flags.DEFINE_string('test_image_dir', test_image_dir,
-			   """Directory where to output images.""")
+         """Directory where to output images.""")
 tf.app.flags.DEFINE_string('subset', 'train',
                            """Either 'train' or 'validation'.""")
 tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', checkpoint,
@@ -91,6 +91,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     batch_frame2 = dataset_frame2.batch(FLAGS.batch_size).make_initializable_iterator()
     batch_frame3 = dataset_frame3.batch(FLAGS.batch_size).make_initializable_iterator()
     
+    '''
     # Create input and target placeholder.
     input_placeholder = tf.concat([batch_frame1.get_next(), batch_frame3.get_next()], 3)
     target_placeholder = batch_frame2.get_next()
@@ -98,9 +99,8 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # input_resized = tf.image.resize_area(input_placeholder, [128, 128])
     # target_resized = tf.image.resize_area(target_placeholder,[128, 128])
 
-
     # Prepare model.
-    model = PWCNet()
+    model = Voxel_flow_model(is_train=True)
     prediction, flow_motion, flow_mask, prediction128, prediction64 = model.inference(input_placeholder)
     target_64 = tf.image.resize_bilinear(target_placeholder, [64, 64])
     target_128 = tf.image.resize_bilinear(target_placeholder, [128, 128])
@@ -113,8 +113,25 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
                         + model.coarse_loss(prediction64, target_64, FLAGS.epsilon)
     # total_loss = reproduction_loss + prior_loss
     total_loss = reproduction_loss + coarse_loss
-    
-    # Perform learning rate scheduling.
+    '''
+
+    input_placeholder_1 = batch_frame1.get_next()
+    input_placeholder_2 = batch_frame2.get_next()
+
+    # PWC Net
+    model = PWCNet()
+    flow_motion, __, __ = PWCNet(input_placeholder_1, input_placeholder_2)
+    flow_mask = tf.Variable(name='flow_mask',
+                            shape=[net.shape[0], net.shape[1], net.shape[2], 1],
+                            dtype=tf.float32, 
+                            initializer=tf.contrib.layers.xavier_initializer())
+    net = tf.concat([flow_motion, flow_mask], axis=3)
+    input_images = tf.concat([input_placeholder_1, input_placeholder_2], axis=3)
+    prediction = trainable_synthesize_frame(net, input_images)
+    total_loss = reproduction_loss(predictions, flow_motion, flow_mask, target_placeholder,
+                             FLAGS.lambda_motion, FLAGS.lambda_mask,
+                             FLAGS.epsilon, regularize=False)
+
     learning_rate = FLAGS.initial_learning_rate
 
     # Create an optimizer that performs gradient descent.
@@ -125,7 +142,7 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
     # Create summaries
     summaries = tf.get_collection(tf.GraphKeys.SUMMARIES)
     summaries.append(tf.summary.scalar('total_loss', total_loss))
-    summaries.append(tf.summary.scalar('reproduction_loss', reproduction_loss))
+    # summaries.append(tf.summary.scalar('reproduction_loss', reproduction_loss))
     # summaries.append(tf.summary.scalar('prior_loss', prior_loss))
     summaries.append(tf.summary.image('Input Image (before)', input_placeholder[:, :, :, 0:3], 3))
     summaries.append(tf.summary.image('Input Image (after)', input_placeholder[:, :, :, 3:6], 3))
@@ -206,7 +223,7 @@ def validate(dataset_frame1, dataset_frame2, dataset_frame3):
 def test(dataset_frame1, dataset_frame2, dataset_frame3):
   """Perform test on a trained model."""
   with tf.Graph().as_default():
-		# Create input and target placeholder.
+    # Create input and target placeholder.
     input_placeholder = tf.placeholder(tf.float32, shape=(None, 256, 256, 6))
     target_placeholder = tf.placeholder(tf.float32, shape=(None, 256, 256, 3))
     

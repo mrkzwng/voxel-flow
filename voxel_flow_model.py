@@ -44,7 +44,6 @@ class Voxel_flow_model(object):
                   + lambda_mask * l1_charbonnier(flow_mask, epsilon)
 
     return self.reproduction_loss
-    
 
   def coarse_loss(self, predictions, targets, epsilon):
     """

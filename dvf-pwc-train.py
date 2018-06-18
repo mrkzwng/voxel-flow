@@ -14,6 +14,7 @@ from datetime import datetime
 import random
 from random import shuffle
 from voxel_flow_model import Voxel_flow_model
+from model import PWCNet
 from utils.image_utils import imwrite
 from functools import partial
 import pdb
@@ -60,6 +61,8 @@ tf.app.flags.DEFINE_float('lambda_mask', 0.005,
             """Regularization term for time component""")
 tf.app.flags.DEFINE_float('epsilon', 0.001,
             """Charbonnier distance parameter""")
+tf.app.flags.DEFINE_integer('height', 256, "Input image height")
+tf.app.flags.DEFINE_integer('width', 256, "Input image width")
 
 
 def _read_image(filename):
@@ -117,18 +120,20 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
 
     input_placeholder_1 = batch_frame1.get_next()
     input_placeholder_2 = batch_frame2.get_next()
+    input_placeholder = tf.concat([input_placeholder_1, input_placeholder_2], axis=3)
+    target_placeholder = batch_frame2.get_next()
 
     # PWC Net
     model = PWCNet()
-    flow_motion, __, __ = PWCNet(input_placeholder_1, input_placeholder_2)
-    flow_mask = tf.Variable(name='flow_mask',
-                            shape=[net.shape[0], net.shape[1], net.shape[2], 1],
-                            dtype=tf.float32, 
-                            initializer=tf.contrib.layers.xavier_initializer())
+    flow_motion, __, __ = model(input_placeholder_1, input_placeholder_2)
+    flow_mask = tf.get_variable(name='flow_mask',
+                                shape=[FLAGS.batch_size, FLAGS.height, FLAGS.width, 1],
+                                dtype=tf.float32, 
+                                initializer=tf.contrib.layers.xavier_initializer())
     net = tf.concat([flow_motion, flow_mask], axis=3)
     input_images = tf.concat([input_placeholder_1, input_placeholder_2], axis=3)
-    prediction = trainable_synthesize_frame(net, input_images)
-    total_loss = reproduction_loss(predictions, flow_motion, flow_mask, target_placeholder,
+    prediction, __, __ = trainable_synthesize_frame(net, input_images, FLAGS)
+    total_loss = reproduction_loss(prediction, flow_motion, flow_mask, target_placeholder,
                              FLAGS.lambda_motion, FLAGS.lambda_mask,
                              FLAGS.epsilon, regularize=False)
 
@@ -161,12 +166,12 @@ def train(dataset_frame1, dataset_frame2, dataset_frame3):
         and tf.train.get_checkpoint_state(FLAGS.pretrained_model_checkpoint_path):
       sess = tf.Session(config=config)
       assert tf.gfile.Exists(FLAGS.pretrained_model_checkpoint_path)
+      print('%s: Pre-trained model restored from %s' %
+        (datetime.now(), ckpt.model_checkpoint_path))
       ckpt = tf.train.get_checkpoint_state(
                FLAGS.pretrained_model_checkpoint_path)
       restorer = tf.train.Saver()
       restorer.restore(sess, ckpt.model_checkpoint_path)
-      print('%s: Pre-trained model restored from %s' %
-        (datetime.now(), ckpt.model_checkpoint_path))
       sess.run([batch_frame1.initializer, batch_frame2.initializer, batch_frame3.initializer])
     else:
       # Build an initialization operation to run below.

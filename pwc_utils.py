@@ -2,9 +2,10 @@
 import tensorflow as tf
 from utils.geo_layer_utils import bilinear_interp
 from utils.geo_layer_utils import meshgrid
+from utils.loss_utils import *
 
 
-def trainable_synthesize_frame(self, net, input_images):
+def trainable_synthesize_frame(net, input_images, FLAGS):
     net_copy = net
     
     flow = net[:, :, :, 0:2]

@@ -120,7 +120,7 @@ class Voxel_flow_model(object):
                         64, [5, 5], stride=1, scope='deconv3b')
           # concatenate w/ coarser scale
           deconv_64b = tf.image.resize_bilinear(flow_64[:, :, :, :2], [128, 128])
-          deconv_64b = slim.conv2d(deconv_64b, 32, [128, 128], stride=1, scope='deconv_64b')
+          deconv_64b = slim.conv2d(deconv_64b, 32, [5, 5], stride=1, scope='deconv_64b')
           flow_128 = slim.conv2d(tf.concat([deconv_64b, deconv_3b], axis=3), 3,
                                  [5, 5], stride=1, scope='flow_128')
 
@@ -148,7 +148,7 @@ class Voxel_flow_model(object):
                         32, [5, 5], stride=1, scope='deconv256')
           # concatenate w/ coarser scale
           deconv_64a = tf.image.resize_bilinear(flow_64[:, :, :, :2], [256, 256])
-          deconv_64a = slim.conv2d(deconv_64a, 32, [256, 256], stride=1, scope='deconv_64a')
+          deconv_64a = slim.conv2d(deconv_64a, 32, [5, 5], stride=1, scope='deconv_64a')
           deconv_128 = tf.image.resize_bilinear(flow_128[:, :, :, :2], [256, 256])
           deconv_128 = slim.conv2d(deconv_128, 32, [5, 5], stride=1, scope='deconv_128')
           conv_concat1 = slim.conv2d(tf.concat([deconv_64a, deconv_128, deconv_256], axis=3),
